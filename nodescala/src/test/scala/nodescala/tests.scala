@@ -33,20 +33,40 @@ class NodeScalaSuite extends FunSuite {
 
   test("Future.all success") {
     val all = Future.all(List(Future(1), Future(2), Future(3)))
-    assert(Await.result(all, 1 millis) == List(1, 2, 3))
+    assert(Await.result(all, 10 millis) == List(1, 2, 3))
   }
 
   test("Future.all failure") {
     val all = Future.all(List(Future(1), Future(2), Future{throw new Exception}))
-    assert(Await.result(all.recover{case _ => 0}, 1 millis) == 0)
+    assert(Await.result(all.recover{case _ => 0}, 10 millis) == 0)
   }
 
   test("Future.any") {
     (1 to 100).foreach { _ =>
       val any = Future.any(List(Future(1), Future(2), Future{throw new Exception}))
-      val result = Await.result(any.recover{case _ => 0}, 1 millis)
+      val result = Await.result(any.recover{case _ => 0}, 10 millis)
       assert(Set(0, 1, 2)(result))
     }
+  }
+
+  test("Future.delay") {
+    assert(Await.ready(Future.delay(1 second), 1.1 seconds).isCompleted)
+    try {
+      Await.result(Future.delay(1 second), 0.9 second)
+      assert(false)
+    } catch {
+      case t: TimeoutException => // ok!
+    }
+  }
+
+  test("continueWith") {
+    val f = Future(1).continueWith(_ => "foo")
+    assert(Await.result(f, 10 millis) == "foo")
+  }
+
+  test("continue") {
+    val f = Future(1).continue(_ => "foo")
+    assert(Await.result(f, 10 millis) == "foo")
   }
 
   

@@ -69,6 +69,25 @@ class NodeScalaSuite extends FunSuite {
     assert(Await.result(f, 10 millis) == "foo")
   }
 
+  test("cancel") {
+    var stack = List[Int]()
+    val working = Future.run() { ct =>
+      Future {
+        while (ct.nonCancelled) {
+          stack = 0 :: stack
+        }
+        stack = 1 :: stack
+      }
+    }
+    Future.delay(10 millis) onSuccess {
+      case _ => working.unsubscribe()
+    }
+    Thread.sleep(100)
+    assert(stack.size > 10)
+    assert(stack.head == 1)
+    assert(stack.last == 0)
+  }
+
   
   
   class DummyExchange(val request: Request) extends Exchange {

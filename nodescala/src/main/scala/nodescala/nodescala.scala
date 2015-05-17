@@ -51,9 +51,9 @@ trait NodeScala {
     val listenerSubscription = listener.start()
 
     val serverSubscription = Future.run() { ct =>
-      Future {
+      async {
         while (ct.nonCancelled) {
-          val (req, xch) = Await.result(listener.nextRequest, 30 second)
+          val (req, xch) = await(listener.nextRequest)
           respond(xch, ct, handler(req))
         }
       }
